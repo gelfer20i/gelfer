@@ -1,13 +1,18 @@
 import {
+  addDependenciesToPackageJson,
   addProjectConfiguration,
   formatFiles,
   generateFiles,
   getWorkspaceLayout,
+  installPackagesTask,
   names,
   offsetFromRoot,
   Tree,
+  updateJson,
+  readJsonFile
 } from '@nrwl/devkit';
 import * as path from 'path';
+import { dependencies } from '../../utils/dependencies';
 import { AuthGeneratorSchema } from './schema';
 
 interface NormalizedSchema extends AuthGeneratorSchema {
@@ -45,7 +50,7 @@ function addFiles(tree: Tree, options: NormalizedSchema) {
     ...options,
     ...names(options.name),
     offsetFromRoot: offsetFromRoot(options.projectRoot),
-    template: '',
+    template: ''
   };
   generateFiles(
     tree,
@@ -53,6 +58,34 @@ function addFiles(tree: Tree, options: NormalizedSchema) {
     options.projectRoot,
     templateOptions
   );
+}
+
+function updateDeps(tree: Tree){
+  return addDependenciesToPackageJson(
+    tree,
+    {
+      // ejs: dependencies.ejs,
+      '@20i/cognito-nestjs': dependencies['@20i/cognito-nestjs']
+    },
+    {}
+    )
+}
+
+function updateTsBaseConfig(tree: Tree, options: NormalizedSchema): void {
+  // const project = readProjectConfiguration(tree, options.projectName);
+  // `${project.root}/tsconfig.lib.json`
+
+  const workspaceName = readJsonFile('package.json').name;
+  return updateJson(tree, `tsconfig.base.json`, (json) => {
+    const projectField = "@" + workspaceName + "/" + options.projectName
+
+    json.compilerOptions.paths = {
+      ...json.compilerOptions.paths,
+      [projectField]: [`libs/${options.projectName}/src/`]
+    }
+
+    return json;
+  });
 }
 
 export default async function (tree: Tree, options: AuthGeneratorSchema) {
@@ -68,6 +101,11 @@ export default async function (tree: Tree, options: AuthGeneratorSchema) {
     },
     tags: normalizedOptions.parsedTags,
   });
+  updateDeps(tree)
   addFiles(tree, normalizedOptions);
+  updateTsBaseConfig(tree, normalizedOptions)
   await formatFiles(tree);
+  return () => {
+    installPackagesTask(tree)
+  }
 }

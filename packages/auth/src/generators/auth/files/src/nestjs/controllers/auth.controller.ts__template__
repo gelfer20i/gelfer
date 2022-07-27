@@ -1,0 +1,14 @@
+import { Public } from "@20i/cognito-nestjs"
+import { Controller, Get } from '@nestjs/common';
+import { AuthService } from '../services/auth.service';
+
+@Controller("/auth")
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Public()
+  @Get("/hello")
+  getHello(): string {
+    return this.authService.getHello();
+  }
+}

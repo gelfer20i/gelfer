@@ -1,1 +1,4 @@
-const variable = "<%= projectName %>";
+export * from "./nestjs/services/auth.service"
+export * from "./nestjs/controllers/auth.controller"
+export * from "./nestjs/auth.module"
+export * from "./react/hooks/useAuth"
